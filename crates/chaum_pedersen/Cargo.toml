@@ -1,0 +1,12 @@
+[package]
+authors = ["Elvis Sabanovic <elvissabanovic3@gmail.com>"]
+description = "Implementation of Chaum Pedersen Protocol"
+name = "chaum_pedersen"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+num-bigint = { version = "0.4.4", features = ["rand"] }
+rand = "0.8.5"
+lazy_static = "1.4.0"
+tokio = { version = "1.32.0", features = ["full"] }
