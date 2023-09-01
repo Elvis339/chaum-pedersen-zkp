@@ -1,8 +1,9 @@
 #[macro_use]
 extern crate lazy_static;
 
-use num_bigint::{BigInt, ToBigInt};
 use std::sync::Arc;
+
+use num_bigint::{BigInt, ToBigInt};
 use tokio::try_join;
 
 use crate::utils::generate_random_bigint;
@@ -37,16 +38,21 @@ impl ChaumPedersen {
         let q = &p - BigInt::from(1);
         Self {
             p: Arc::new(p),
-            q,
             g: Arc::new(g),
             h: Arc::new(h),
+            q,
         }
     }
 
-    pub fn prover_commit(&self, k: &BigInt) -> (BigInt, BigInt) {
-        let r1 = self.g.modpow(k, &self.p);
-        let r2 = self.h.modpow(k, &self.p);
-        (r1, r2)
+    pub async fn prover_commit(&self, k: &BigInt) -> (BigInt, BigInt) {
+        let modpow_closure = |base: Arc<BigInt>, exp: Arc<BigInt>, modulo: Arc<BigInt>| {
+            tokio::spawn(async move { base.modpow(&*exp, &modulo) })
+        };
+
+        let r1 = modpow_closure(self.g.clone(), Arc::new(k.clone()), self.p.clone());
+        let r2 = modpow_closure(self.h.clone(), Arc::new(k.clone()), self.p.clone());
+
+        try_join!(r1, r2).unwrap()
     }
 
     pub fn prover_solve_challenge(&self, k: &BigInt, c: &BigInt, x: &BigInt) -> BigInt {
@@ -75,22 +81,36 @@ impl ChaumPedersen {
         y1: BigInt,
         y2: BigInt,
     ) -> bool {
-        let g = self.g.clone();
-        let h = self.h.clone();
-        let p = self.p.clone();
+        let verify_closure = |base1: Arc<BigInt>,
+                              exp1: Arc<BigInt>,
+                              base2: Arc<BigInt>,
+                              exp2: Arc<BigInt>,
+                              modulo: Arc<BigInt>| {
+            tokio::spawn(async move {
+                (base1.modpow(&*exp1, &modulo) * base2.modpow(&*exp2, &modulo)) % &*modulo
+            })
+        };
 
         let s = Arc::new(s);
         let c = Arc::new(c);
         let y1 = Arc::new(y1);
         let y2 = Arc::new(y2);
 
-        let (p_clone, s_clone, c_clone, y1_clone) = (p.clone(), s.clone(), c.clone(), y1.clone());
-
-        let t1 = tokio::spawn(async move {
-            (g.modpow(&*s_clone, &p_clone) * y1_clone.modpow(&*c_clone, &p_clone)) % &*p_clone
-        });
-
-        let t2 = tokio::spawn(async move { (h.modpow(&*s, &p) * y2.modpow(&*c, &p)) % &*p });
+        // We directly use the variables in the first closure and clone them for the second
+        let t1 = verify_closure(
+            self.g.clone(),
+            s.clone(),
+            y1.clone(),
+            c.clone(),
+            self.p.clone(),
+        );
+        let t2 = verify_closure(
+            self.h.clone(),
+            s.clone(),
+            y2.clone(),
+            c.clone(),
+            self.p.clone(),
+        );
 
         let (t1, t2) = try_join!(t1, t2).unwrap();
 
@@ -105,7 +125,7 @@ mod tests {
     use super::*;
 
     #[tokio::test]
-    async fn proof_is_valid() {
+    async fn proof() {
         let cp = ChaumPedersen::new(P.clone(), G.clone(), H.clone());
 
         // Register
@@ -119,7 +139,7 @@ mod tests {
 
         // Prover Commit
         let k = generate_random_bigint(&cp.q);
-        let (r1, r2) = cp.prover_commit(&k);
+        let (r1, r2) = cp.prover_commit(&k).await;
 
         // Verifier send challenge
         let c = cp.verifier_generate_challenge();
@@ -128,8 +148,18 @@ mod tests {
         let s = cp.prover_solve_challenge(&k, &c, &pw);
 
         // Verify
-        let is_valid = cp.verify(s, c, r1, r2, y1, y2).await;
+        let is_valid = cp
+            .verify(s.clone(), c.clone(), r1.clone(), r2.clone(), y1, y2)
+            .await;
+        assert_eq!(is_valid, true);
 
-        assert_eq!(is_valid, true)
+        let invalid_pw = BigInt::from_bytes_be(
+            Sign::Plus,
+            b"a27007107e85ea5c4894efccee57ac8bec713c5de2869a19e97bccd1c6a869e0",
+        );
+        let invalid_y1 = cp.g.modpow(&invalid_pw, &cp.p);
+        let invalid_y2 = cp.h.modpow(&invalid_pw, &cp.p);
+
+        assert_eq!(cp.verify(s, c, r1, r2, invalid_y1, invalid_y2).await, false);
     }
 }

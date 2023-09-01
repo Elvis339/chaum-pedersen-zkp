@@ -59,9 +59,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .expect("password is required");
 
             let y1 = cp.g.modpow(&pw, &cp.p);
-            // info!("y1 {}", y1);
             let y2 = cp.h.modpow(&pw, &cp.p);
-            // info!("y2 {}", y2);
 
             client
                 .register(tonic::Request::new(RegisterRequest {
@@ -80,9 +78,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             // Commitment phase
             let k = generate_random_bigint(&cp.q);
-            let (r1, r2) = cp.prover_commit(&k);
-            // info!("r1 {}", r1);
-            // info!("r2 {}", r2);
+            let (r1, r2) = cp.prover_commit(&k).await;
 
             let auth_challenge_response = client
                 .create_authentication_challenge(tonic::Request::new(
