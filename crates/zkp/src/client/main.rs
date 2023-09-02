@@ -7,8 +7,8 @@ use num_bigint::BigInt;
 use num_traits::Num;
 use pretty_env_logger::init;
 
-use chaum_pedersen::{ChaumPedersen, G, H, P};
 use chaum_pedersen::utils::generate_random_bigint;
+use chaum_pedersen::{ChaumPedersen, G, H, P};
 use zkp::auth_client::AuthClient;
 
 use crate::utils::to_hex_string;
@@ -41,7 +41,7 @@ fn cli() -> Command {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     init();
-    let channel = tonic::transport::Channel::from_static("http://[::1]:50051")
+    let channel = tonic::transport::Channel::from_static("http://0.0.0.0:50051")
         .connect()
         .await?;
 

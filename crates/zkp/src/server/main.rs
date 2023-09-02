@@ -2,9 +2,9 @@
 extern crate log;
 extern crate pretty_env_logger;
 
-use std::sync::{Arc};
-use tokio::sync::Mutex;
+use std::sync::Arc;
 
+use tokio::sync::Mutex;
 use tonic::transport::Server;
 
 use chaum_pedersen::{ChaumPedersen, G, H, P};
@@ -23,9 +23,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let db = Arc::new(Mutex::new(KeyValueStorage::new()));
     let cp = ChaumPedersen::new(P.clone(), G.clone(), H.clone());
 
-    let addr = "[::1]:50051".parse().expect("invalid address");
+    let addr = "0.0.0.0:50051".parse().expect("invalid address");
 
-    let mut auth_service = AuthService::new(db.clone(), cp);
+    let auth_service = AuthService::new(db.clone(), cp);
 
     info!("gRPC server started at {}", addr);
 
