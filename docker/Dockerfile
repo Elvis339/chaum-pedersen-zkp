@@ -16,7 +16,7 @@ RUN cargo clean && cargo build --all
 # Final stage
 FROM debian:buster-slim
 
-ARG APP=/usrc/local/bin
+ARG APP=/usr/local/bin
 ENV APP_USER=appuser
 
 RUN apt-get update \
