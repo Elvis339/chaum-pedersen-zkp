@@ -28,9 +28,9 @@ impl KeyValueStorage {
             (StorageTree::Auth, db.open_tree("auth").unwrap()),
             (StorageTree::Challenge, db.open_tree("challenge").unwrap()),
         ]
-            .iter()
-            .cloned()
-            .collect();
+        .iter()
+        .cloned()
+        .collect();
 
         Self { db, trees }
     }

@@ -1,9 +1,9 @@
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
-use tokio::sync::Mutex;
 
 use prost::Message;
+use tokio::sync::Mutex;
 use tonic::{Request, Response, Status};
 
 use chaum_pedersen::ChaumPedersen;
@@ -75,7 +75,7 @@ impl Auth for AuthService {
 
         let challenge = &self.cp.verifier_generate_challenge().to_str_radix(16);
 
-        let mut challenged_model =
+        let challenged_model =
             ChallengeModel::new(challenge.clone(), (r1.clone(), r2.clone()), user);
         let mut hasher = DefaultHasher::new();
         challenged_model.hash(&mut hasher);
