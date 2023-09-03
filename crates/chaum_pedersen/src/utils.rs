@@ -9,15 +9,6 @@ pub fn generate_random_bigint(bound: &BigInt) -> BigInt {
     rng.gen_bigint_range(&BigInt::from(1), &(bound - BigInt::from(1)))
 }
 
-/// Converts a curve25519_dalek::Scalar to a num_bigint::BigInt
-pub fn scalar_to_bigint(scalar: &Scalar) -> BigInt {
-    // Convert the Scalar to its little-endian byte array representation
-    let bytes = scalar.to_bytes();
-
-    // Convert the byte array to a BigInt
-    BigInt::from_bytes_le(Sign::Plus, &bytes)
-}
-
 pub enum ChaumPedersenFactoryType {
     Interactive(ChaumPedersen),
     NonInteractive(EccChaumPedersen),
