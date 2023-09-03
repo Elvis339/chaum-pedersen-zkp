@@ -1,10 +1,11 @@
+use std::collections::hash_map::DefaultHasher;
 use std::fmt;
 use std::fmt::Display;
 use std::hash::{Hash, Hasher};
 
 use serde::{Deserialize, Serialize};
 
-use crate::storage::model::user_model::UserModel;
+use crate::model::user_model::UserModel;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ChallengeModel {
@@ -20,6 +21,12 @@ impl ChallengeModel {
             commitment,
             user,
         }
+    }
+
+    pub fn generate_auth_id(&self) -> String {
+        let mut hasher = DefaultHasher::new();
+        self.hash(&mut hasher);
+        hasher.finish().to_string()
     }
 }
 

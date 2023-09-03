@@ -3,10 +3,7 @@ use std::fmt;
 use std::fmt::Display;
 use std::hash::{Hash, Hasher};
 
-use prost::Message;
 use serde::{Deserialize, Serialize};
-
-use crate::service::zkp::RegisterRequest;
 
 /// `UserModel` represents the data model for user authentication.
 ///
@@ -19,13 +16,19 @@ pub struct UserModel {
     pub y2: String,
 }
 
-impl From<RegisterRequest> for UserModel {
-    fn from(value: RegisterRequest) -> Self {
-        UserModel {
-            user: value.user,
-            y1: value.y1,
-            y2: value.y2,
-        }
+impl UserModel {
+    pub fn user_id(user: &String) -> Vec<u8> {
+        let mut hasher = DefaultHasher::new();
+        let _ = user.hash(&mut hasher);
+        let k = hasher.finish();
+        // @todo: fix
+        k.to_string().as_bytes().to_vec()
+    }
+
+    pub fn auth_id(&self) -> String {
+        let mut hasher = DefaultHasher::new();
+        self.hash(&mut hasher);
+        hasher.finish().to_string()
     }
 }
 
@@ -45,10 +48,4 @@ impl Display for UserModel {
             self.user, self.y1, self.y2,
         )
     }
-}
-
-pub fn user_id(user_name: &String) -> Vec<u8> {
-    let mut hasher = DefaultHasher::new();
-    let _ = user_name.hash(&mut hasher);
-    hasher.finish().encode_to_vec()
 }
