@@ -9,19 +9,18 @@ use tokio::sync::RwLock;
 use tonic::{Request, Response, Status};
 
 use chaum_pedersen::chaum_pedersen::{ChaumPedersen, G, H, P};
-use chaum_pedersen::ChaumPedersenTrait;
 use chaum_pedersen::ecc_chaum_pedersen::EccChaumPedersen;
-use chaum_pedersen::utils::generate_random_bigint;
+use chaum_pedersen::ChaumPedersenTrait;
 use storage::db::{KeyValueStorage, StorageTree};
 use storage::model::challenge_model::ChallengeModel;
 use storage::model::user_model::UserModel;
 
+use crate::service::zkp::auth_server::Auth;
 use crate::service::zkp::{
     AuthenticationAnswerRequest, AuthenticationAnswerResponse, AuthenticationChallengeRequest,
     AuthenticationChallengeResponse, NonInteractiveAuthenticationRequest, RegisterRequest,
     RegisterResponse,
 };
-use crate::service::zkp::auth_server::Auth;
 
 pub struct AuthService {
     db: RwLock<KeyValueStorage>,
@@ -107,8 +106,9 @@ impl Auth for AuthService {
         let ecc = EccChaumPedersen::new();
         let ni_request = request.get_ref();
 
-        let (solution, challenge, y1, y2, session_id) =
-            self.non_interactive_verification_params(&ni_request).await?;
+        let (solution, challenge, y1, y2, session_id) = self
+            .non_interactive_verification_params(&ni_request)
+            .await?;
 
         if ecc
             .verify_proof(solution, challenge, y1, y2, None, None)
@@ -137,7 +137,7 @@ impl AuthService {
     }
 
     async fn get_user(&self, user_key: &Vec<u8>) -> Result<UserModel, Status> {
-        let mut db = self.db.read().await;
+        let db = self.db.read().await;
         if !db.exists(StorageTree::Auth, &user_key) {
             return Err(Status::not_found("user does not exist"));
         }
@@ -179,7 +179,7 @@ impl AuthService {
             &challenge_model_key,
             challenge_model,
         )
-            .map_err(|e| Status::internal(format!("failed to upsert {}", e)))?;
+        .map_err(|e| Status::internal(format!("failed to upsert {}", e)))?;
 
         Ok((challenge_hex.clone(), auth_id))
     }
@@ -188,9 +188,7 @@ impl AuthService {
         &self,
         ni_request: &NonInteractiveAuthenticationRequest,
     ) -> Result<(Scalar, Scalar, RistrettoPoint, RistrettoPoint, String), Status> {
-        let user = self
-            .get_user(&UserModel::user_id(&ni_request.user))
-            .await?;
+        let user = self.get_user(&UserModel::user_id(&ni_request.user)).await?;
 
         // == Params for verification ==
         let solution: Scalar = serde_json::from_str(&ni_request.s).expect("invalid solution");

@@ -1,5 +1,4 @@
-use curve25519_dalek::Scalar;
-use num_bigint::{BigInt, RandBigInt, Sign};
+use num_bigint::{BigInt, RandBigInt};
 
 use crate::chaum_pedersen::{ChaumPedersen, G, H, P};
 use crate::ecc_chaum_pedersen::EccChaumPedersen;
