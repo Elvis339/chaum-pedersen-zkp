@@ -30,8 +30,15 @@ message AuthenticationAnswerResponse {
   string session_id = 1;
 }
 
+message NonInteractiveAuthenticationRequest {
+  string c = 1;
+  string s = 2;
+  string user = 3;
+}
+
 service Auth {
   rpc Register(RegisterRequest) returns (RegisterResponse) {}
   rpc CreateAuthenticationChallenge(AuthenticationChallengeRequest) returns (AuthenticationChallengeResponse) {}
   rpc VerifyAuthentication(AuthenticationAnswerRequest) returns (AuthenticationAnswerResponse) {}
+  rpc NonInteractiveAuthentication(NonInteractiveAuthenticationRequest) returns (AuthenticationAnswerResponse) {}
 }
